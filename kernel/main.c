@@ -26,6 +26,9 @@
 FORWARD _PROTOTYPE( void announce, (void));	
 FORWARD _PROTOTYPE( void shutdown, (timer_t *tp));
 
+_PROTOTYPE( void kputc, (int c)						);
+
+
 /*===========================================================================*
  *				main                                         *
  *===========================================================================*/
@@ -36,11 +39,15 @@ PUBLIC void main()
   register struct proc *rp;	/* process pointer */
   register struct priv *sp;	/* privilege structure pointer */
   register int i, s;
+#ifdef MHYPER
+  register int vm;  					/* VM  */
+#endif /* MHYPER*/
   int hdrindex;			/* index to array of a.out headers */
   phys_clicks text_base;
   vir_clicks text_clicks, data_clicks;
   reg_t ktsb;			/* kernel task stack base */
   struct exec e_hdr;		/* for a copy of an a.out header */
+
 
   /* Initialize the interrupt controller. */
   intr_init(1);
@@ -49,6 +56,27 @@ PUBLIC void main()
    * for proc_addr() and proc_nr() macros. Do the same for the table with 
    * privilege structures for the system processes. 
    */
+
+
+#ifdef MHYPER2
+for( vm = 0; vm < NR_VMS; vm++) {
+  for (rp = BEG_PROC_ADDR(vm), i = -NR_TASKS;  rp < END_PROC_ADDR(vm);  ++rp, ++i) {
+  	rp->p_rts_flags = SLOT_FREE;	/* initialize free slot */
+	rp->p_nr = i;					/* proc number from ptr */
+	rp->p_vmid = vm;				/* default Virtual Machine ID */
+	rp->p_endpoint = _ENDPOINT(vm, 0, rp->p_nr); /* generation no. 0 */
+        (pproc_addr + NR_TASKS)[vm][i] = rp;        /* proc ptr from number */
+  kprintf(".");
+  }
+ 
+  for (sp = BEG_PRIV_ADDR(vm), i = 0; sp < END_PRIV_ADDR(vm); ++sp, ++i) {
+	sp->s_proc_nr = NONE;			/* initialize as free */
+	sp->s_id = i;				/* priv structure index */
+	ppriv_addr[vm][i] = sp;			/* priv ptr from number */
+  }
+}
+
+#else /* MHYPER2 */
   for (rp = BEG_PROC_ADDR, i = -NR_TASKS; rp < END_PROC_ADDR; ++rp, ++i) {
   	rp->p_rts_flags = SLOT_FREE;		/* initialize free slot */
 	rp->p_nr = i;				/* proc number from ptr */
@@ -60,6 +88,7 @@ PUBLIC void main()
 	sp->s_id = i;				/* priv structure index */
 	ppriv_addr[i] = sp;			/* priv ptr from number */
   }
+#endif /* MHYPER2 */
 
   /* Set up proc table entries for processes in boot image.  The stacks of the
    * kernel tasks are initialized to an array in data space.  The stacks
@@ -71,10 +100,13 @@ PUBLIC void main()
 
   /* Task stacks. */
   ktsb = (reg_t) t_stack;
-
   for (i=0; i < NR_BOOT_PROCS; ++i) {
 	ip = &image[i];				/* process' attributes */
+#ifdef MHYPER2
+	rp = proc_addr(0,ip->proc_nr);	/* get process pointer from VM=0 */
+#else /* MHYPER2 */
 	rp = proc_addr(ip->proc_nr);		/* get process pointer */
+#endif /* MHYPER2 */
 	ip->endpoint = rp->p_endpoint;		/* ipc endpoint */
 	rp->p_max_priority = ip->priority;	/* max scheduling priority */
 	rp->p_priority = ip->priority;		/* current priority */
@@ -105,6 +137,7 @@ PUBLIC void main()
 	 */
 	phys_copy(aout + hdrindex * A_MINHDR, vir2phys(&e_hdr),
 						(phys_bytes) A_MINHDR);
+
 	/* Convert addresses to clicks and build process memory map */
 	text_base = e_hdr.a_syms >> CLICK_SHIFT;
 	text_clicks = (e_hdr.a_text + CLICK_SIZE-1) >> CLICK_SHIFT;
@@ -145,6 +178,7 @@ PUBLIC void main()
 	alloc_segments(rp);
   }
 
+
 #if ENABLE_BOOTDEV 
   /* Expect an image of the boot device to be loaded into memory as well. 
    * The boot device is the last module that is loaded into memory, and, 
@@ -161,8 +195,15 @@ PUBLIC void main()
   /* MINIX is now ready. All boot image processes are on the ready queue.
    * Return to the assembly code to start running the current process. 
    */
+#ifdef MHYPER2
+  bill_ptr = proc_addr(0,IDLE);		/* it has to point somewhere */
+#else /* MHYPER2 */
   bill_ptr = proc_addr(IDLE);		/* it has to point somewhere */
+#endif /* MHYPER2 */
   announce();				/* print MINIX startup banner */
+
+kprintf("FIN DE MAIN\n");
+
   restart();
 }
 
@@ -171,6 +212,12 @@ PUBLIC void main()
  *===========================================================================*/
 PRIVATE void announce(void)
 {
+
+#ifdef MHYPER
+  kprintf("\nMHYPER: Minix as a Hypervisor -"
+      "UTN Facultad Regional Santa Fe - Argentina\n");
+#endif /* MHYPER*/
+
   /* Display the MINIX startup banner. */
   kprintf("\nMINIX %s.%s. "
       "Copyright 2006, Vrije Universiteit, Amsterdam, The Netherlands\n",

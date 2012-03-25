@@ -52,12 +52,39 @@ struct proc {
 
   char p_name[P_NAME_LEN];	/* name of the process, including \0 */
 
-  int p_endpoint;		/* endpoint number, generation-aware */
+  int p_endpoint;			/* endpoint number, generation-aware */
 
+#ifdef MHYPER
+  int p_vmid;			/* Process Virtual Machine ID */
+#endif /* MHYPER */
+  
 #if DEBUG_SCHED_CHECK
   int p_ready, p_found;
 #endif
 };
+
+#ifdef MHYPER
+
+EXTERN unsigned int vm_bitmap;
+struct vm_s {
+	short 		v_flags;			/* VM Status */
+	phys_bytes		v_start;			/* VM start address */
+	phys_bytes		v_size;	 		/* VM memory size in bytes */
+  	char 			v_quantum;			/* quantum size in ticks */
+	char 			v_name[P_NAME_LEN];	/* name of the VM including \0 */
+};
+
+#define VM_UNLIMITED	(-1)	/* Unlimited quantum size */
+
+/* Bits for the VM status	*/
+#define VM_FREE		0x00	/* VM slot is free */
+#define VM_RUNNING	0x01	/* VM is running 	*/
+#define VM_STOPPED	0x02	/* VM is stopped: any VM's process will be scheduled 	*/
+
+EXTERN struct vm_s vm_desc[NR_VMS];	/* process table */
+
+#endif /* MHYPER */
+
 
 /* Bits for the runtime flags. A process is runnable iff p_rts_flags == 0. */
 #define SLOT_FREE	0x01	/* process slot is free */
@@ -88,6 +115,30 @@ struct proc {
 #define IDLE_Q		  15    /* lowest, only IDLE process goes here */
 
 /* Magic process table addresses. */
+#ifdef MHYPER2
+#define BEG_PROC_ADDR(vm) (&proc[(vm)][0])
+#define BEG_USER_ADDR(vm) (&proc[(vm)][NR_TASKS])
+#define END_PROC_ADDR(vm) (&proc[(vm)][NR_TASKS + NR_PROCS])
+
+#define NIL_PROC          ((struct proc *) 0)		
+#define NIL_SYS_PROC      ((struct proc *) 1)		
+#define cproc_addr(vm,n)     (&(proc + NR_TASKS)[(vm)][(n)])
+#define proc_addr(vm,n)      (pproc_addr + NR_TASKS)[(vm)][(n)]
+#define proc_nr(p) 	  ((p)->p_nr)
+
+#define isokprocn(n)      ((unsigned) ((n) + NR_TASKS) < NR_PROCS + NR_TASKS)
+#define isemptyn(vm,n)       isemptyp(proc_addr(vm,n)) 
+#define isemptyp(p)       ((p)->p_rts_flags == SLOT_FREE)
+#define iskernelp(p)	  iskerneln((p)->p_nr)
+#define iskerneln(n)	  ((n) < 0)
+#define isuserp(p)        isusern((p)->p_nr)
+#define isusern(n)        ((n) >= 0)
+
+EXTERN struct proc proc[NR_VMS][NR_TASKS + NR_PROCS];	/* process table */
+EXTERN struct proc *pproc_addr[NR_VMS][NR_TASKS + NR_PROCS];
+ 
+#else /* MHYPER2 */
+
 #define BEG_PROC_ADDR (&proc[0])
 #define BEG_USER_ADDR (&proc[NR_TASKS])
 #define END_PROC_ADDR (&proc[NR_TASKS + NR_PROCS])
@@ -113,6 +164,8 @@ struct proc {
  */
 EXTERN struct proc proc[NR_TASKS + NR_PROCS];	/* process table */
 EXTERN struct proc *pproc_addr[NR_TASKS + NR_PROCS];
+#endif /* MHYPER2 */
+
 EXTERN struct proc *rdy_head[NR_SCHED_QUEUES]; /* ptrs to ready list headers */
 EXTERN struct proc *rdy_tail[NR_SCHED_QUEUES]; /* ptrs to ready list tails */
 

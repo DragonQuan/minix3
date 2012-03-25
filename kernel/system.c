@@ -67,9 +67,42 @@ PUBLIC void sys_task()
   register struct proc *caller_ptr;
   unsigned int call_nr;
   int s;
+#ifdef MHYPER
+  register int vm;					/* VM  */
+  struct vm_s *vmp;
+#endif /* MHYPER */
 
   /* Initialize the system task. */
   initialize();
+#ifdef MHYPER
+kprintf("SYSTEM TASK\n");
+#endif /* MHYPER */
+
+#ifdef MHYPER2
+kprintf("MHYPER - SYSTEM TASK initialize\n");
+kprintf("Initializing Virtual Machines\n");
+vm_bitmap = 0;
+for( vm = 0; vm < NR_VMS; vm++) {
+  kprintf("Setting VM[%d]: ", vm);
+  vmp = &vm_desc[vm];
+  vmp->v_flags = VM_FREE;
+  vmp->v_start = 0;
+  vmp->v_size  = 0;
+  vmp->v_quantum = 0;
+/*  strncpy(vmp->v_name, "VM FREE", P_NAME_LEN);  set VM name */
+}
+
+/* ------------- Resetting VM0 -------------*/
+kprintf("Reseting VM0\n");
+vm_bitmap = 0x01;
+vmp = &vm_desc[0];
+vmp->v_flags = VM_RUNNING;
+vmp->v_start = 0;
+vmp->v_size  = 0;
+vmp->v_quantum = VM_UNLIMITED;
+/* strncpy(vmp->v_name, "VMHYPER", P_NAME_LEN);  set VM name */
+#endif /* MHYPER2 */
+
 
   while (TRUE) {
       /* Get work. Block and wait until a request message arrives. */
@@ -77,7 +110,14 @@ PUBLIC void sys_task()
       call_nr = (unsigned) m.m_type - KERNEL_CALL;	
       who_e = m.m_source;
       okendpt(who_e, &who_p);
+#ifdef MHYPER2
+      who_v = _ENDPOINT_V(who_e);
+      okendpt(who_e, &who_p);
+      caller_ptr = proc_addr(who_v, who_p);
+#else /* MHYPER2*/
+      okendpt(who_e, &who_p);
       caller_ptr = proc_addr(who_p);
+#endif /* MHYPER2*/
 
       /* See if the caller made a valid request and try to handle it. */
       if (! (priv(caller_ptr)->s_call_mask & (1<<call_nr))) {
@@ -116,15 +156,26 @@ PRIVATE void initialize(void)
   register struct priv *sp;
   int i;
 
+
   /* Initialize IRQ handler hooks. Mark all hooks available. */
   for (i=0; i<NR_IRQ_HOOKS; i++) {
       irq_hooks[i].proc_nr_e = NONE;
   }
 
+#ifdef MHYPER2
+for( vm = 0; vm < NR_VMS; vm++) {
+  /* Initialize all alarm timers for all processes. */
+  for (sp=BEG_PRIV_ADDR(vm); sp < END_PRIV_ADDR(vm); sp++) {
+    tmr_inittimer(&(sp->s_alarm_timer));
+  }
+}
+#else /* MHYPER2*/
   /* Initialize all alarm timers for all processes. */
   for (sp=BEG_PRIV_ADDR; sp < END_PRIV_ADDR; sp++) {
     tmr_inittimer(&(sp->s_alarm_timer));
   }
+#endif /* MHYPER2*/
+
 
   /* Initialize the call vector to a safe default handler. Some system calls 
    * may be disabled or nonexistant. Then explicitely map known calls to their
@@ -179,6 +230,7 @@ PRIVATE void initialize(void)
   map(SYS_ABORT, do_abort);		/* abort MINIX */
   map(SYS_GETINFO, do_getinfo); 	/* request system information */ 
   map(SYS_IOPENABLE, do_iopenable); 	/* Enable I/O */
+
 }
 
 /*===========================================================================*
@@ -193,6 +245,22 @@ int proc_type;				/* system or user process flag */
  */
   register struct priv *sp;			/* privilege structure */
 
+#ifdef MHYPER2
+  register int vm;					/* VM  */
+  if (proc_type == SYS_PROC) {			/* find a new slot */
+      vm = rc->p_vmid;
+      for (sp = BEG_PRIV_ADDR(vm); sp < END_PRIV_ADDR(vm); ++sp) 
+          if (sp->s_proc_nr == NONE && sp->s_id != USER_PRIV_ID) break;	
+      if (sp->s_proc_nr != NONE) return(ENOSPC);
+      rc->p_priv = sp;				/* assign new slot */
+      rc->p_priv->s_proc_nr = proc_nr(rc);	/* set association */
+      rc->p_priv->s_flags = SYS_PROC;		/* mark as privileged */
+  } else {
+      rc->p_priv = &priv[vm][USER_PRIV_ID];	/* use shared slot */
+      rc->p_priv->s_proc_nr = INIT_PROC_NR;	/* set association */
+      rc->p_priv->s_flags = 0;			/* no initial flags */
+  }
+#else /* MHYPER2*/
   if (proc_type == SYS_PROC) {			/* find a new slot */
       for (sp = BEG_PRIV_ADDR; sp < END_PRIV_ADDR; ++sp) 
           if (sp->s_proc_nr == NONE && sp->s_id != USER_PRIV_ID) break;	
@@ -205,6 +273,8 @@ int proc_type;				/* system or user process flag */
       rc->p_priv->s_proc_nr = INIT_PROC_NR;	/* set association */
       rc->p_priv->s_flags = 0;			/* no initial flags */
   }
+#endif /* MHYPER2*/
+
   return(OK);
 }
 
@@ -243,6 +313,27 @@ int source;
 /*===========================================================================*
  *				send_sig				     *
  *===========================================================================*/
+#ifdef MHYPER2
+PUBLIC void send_sig(int vm, int proc_nr, int sig_nr)
+{
+/* Notify a system process about a signal. This is straightforward. Simply
+ * set the signal that is to be delivered in the pending signals map and 
+ * send a notification with source SYSTEM.
+ *
+ * Process number is verified to avoid writing in random places, but we
+ * don't kprintf() or panic() because that causes send_sig() invocations.
+ */ 
+  register struct proc *rp;
+  static int n;
+
+  if(!isokprocn(proc_nr) || isemptyn(vm, proc_nr))
+	return;
+
+  rp = proc_addr(vm, proc_nr);
+  sigaddset(&priv(rp)->s_sig_pending, sig_nr);
+  lock_notify(SYSTEM, rp->p_endpoint); 
+}
+#else /* MHYPER2*/
 PUBLIC void send_sig(int proc_nr, int sig_nr)
 {
 /* Notify a system process about a signal. This is straightforward. Simply
@@ -262,10 +353,44 @@ PUBLIC void send_sig(int proc_nr, int sig_nr)
   sigaddset(&priv(rp)->s_sig_pending, sig_nr);
   lock_notify(SYSTEM, rp->p_endpoint); 
 }
+#endif /* MHYPER2*/
 
 /*===========================================================================*
  *				cause_sig				     *
  *===========================================================================*/
+#ifdef MHYPER2
+PUBLIC void cause_sig(vm, proc_nr, sig_nr)
+int vm;			/* process VM */
+int proc_nr;			/* process to be signalled */
+int sig_nr;			/* signal to be sent, 1 to _NSIG */
+{
+/* A system process wants to send a signal to a process.  Examples are:
+ *  - HARDWARE wanting to cause a SIGSEGV after a CPU exception
+ *  - TTY wanting to cause SIGINT upon getting a DEL
+ *  - FS wanting to cause SIGPIPE for a broken pipe 
+ * Signals are handled by sending a message to PM.  This function handles the 
+ * signals and makes sure the PM gets them by sending a notification. The 
+ * process being signaled is blocked while PM has not finished all signals 
+ * for it. 
+ * Race conditions between calls to this function and the system calls that
+ * process pending kernel signals cannot exist. Signal related functions are
+ * only called when a user process causes a CPU exception and from the kernel 
+ * process level, which runs to completion.
+ */
+  register struct proc *rp;
+
+  /* Check if the signal is already pending. Process it otherwise. */
+  rp = proc_addr(vm, proc_nr);
+  if (! sigismember(&rp->p_pending, sig_nr)) {
+      sigaddset(&rp->p_pending, sig_nr);
+      if (! (rp->p_rts_flags & SIGNALED)) {		/* other pending */
+          if (rp->p_rts_flags == 0) lock_dequeue(rp);	/* make not ready */
+          rp->p_rts_flags |= SIGNALED | SIG_PENDING;	/* update flags */
+          send_sig(vm, PM_PROC_NR, SIGKSIG);
+      }
+  }
+}
+#else /* MHYPER2*/
 PUBLIC void cause_sig(proc_nr, sig_nr)
 int proc_nr;			/* process to be signalled */
 int sig_nr;			/* signal to be sent, 1 to _NSIG */
@@ -296,6 +421,7 @@ int sig_nr;			/* signal to be sent, 1 to _NSIG */
       }
   }
 }
+#endif /* MHYPER2*/
 
 /*===========================================================================*
  *				umap_bios				     *
@@ -435,7 +561,11 @@ vir_bytes bytes;		/* # of bytes to copy  */
 
  	type = vir_addr[i]->segment & SEGMENT_TYPE;
 	if(type != PHYS_SEG && isokendpt(vir_addr[i]->proc_nr_e, &proc_nr))
+#ifdef MHYPER2
+	   p = proc_addr(_ENDPOINT_V(vir_addr[i]->proc_nr_e), proc_nr);
+#else /* MHYPER2*/
 	   p = proc_addr(proc_nr);
+#endif /* MHYPER2*/
 	else
 	   p = NULL;
 
@@ -472,7 +602,6 @@ vir_bytes bytes;		/* # of bytes to copy  */
   return(OK);
 }
 
-
 /*===========================================================================*
  *			         clear_endpoint				     *
  *===========================================================================*/
@@ -497,7 +626,11 @@ register struct proc *rc;		/* slot of process to clean up */
       int target_proc;
 
       okendpt(rc->p_sendto_e, &target_proc);
+#ifdef MHYPER2
+      xpp = &proc_addr(rc->p_vmid, target_proc)->p_caller_q; /* destination's queue */
+#else /* MHYPER2*/
       xpp = &proc_addr(target_proc)->p_caller_q; /* destination's queue */
+#endif /* MHYPER2*/
       while (*xpp != NIL_PROC) {		/* check entire queue */
           if (*xpp == rc) {			/* process is on the queue */
               *xpp = (*xpp)->p_q_link;		/* replace by next process */
@@ -517,7 +650,11 @@ register struct proc *rc;		/* slot of process to clean up */
    * the exiting process, it must be alerted that process no longer is alive.
    * Check all processes. 
    */
+#ifdef MHYPER2
+  for (rp = BEG_PROC_ADDR(rc->p_vmid); rp < END_PROC_ADDR(rc->p_vmid); rp++) {
+#else /* MHYPER2*/
   for (rp = BEG_PROC_ADDR; rp < END_PROC_ADDR; rp++) {
+#endif /* MHYPER2*/
       if(isemptyp(rp))
 	continue;
 

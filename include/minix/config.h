@@ -3,7 +3,14 @@
 
 /* Minix release and version numbers. */
 #define OS_RELEASE "3"
+
+#define MHYPER 1
+
+#ifdef MHYPER
+#define OS_VERSION "1.2a-HYPER"
+#else
 #define OS_VERSION "1.2a"
+#endif /* MHYPER*/
 
 /* This file sets configuration parameters for the MINIX kernel, FS, and PM.
  * It is divided up into two main sections.  The first section contains
@@ -30,6 +37,8 @@
 #define ATARI        _MACHINE_ATARI
 #define MACINTOSH    _MACHINE_MACINTOSH
 
+
+
 /* Number of slots in the process table for non-kernel processes. The number
  * of system processes defines how many processes with special privileges 
  * there can be. User processes share the same properties and count for one. 
@@ -38,6 +47,9 @@
  */
 #define NR_PROCS 	  _NR_PROCS 
 #define NR_SYS_PROCS      _NR_SYS_PROCS
+#ifdef MHYPER
+#define NR_VMS		16		/* Max(NR_VMS) = 16 */
+#endif /* MHYPER*/
 
 #if _MINIX_SMALL
 
@@ -99,8 +111,8 @@
 /* NR_CONS, NR_RS_LINES, and NR_PTYS determine the number of terminals the
  * system can handle.
  */
-#define NR_CONS            4	/* # system consoles (1 to 8) */
-#define	NR_RS_LINES	   4	/* # rs232 terminals (0 to 4) */
+#define 	NR_CONS        4	/* # system consoles (1 to 8) */
+#define	NR_RS_LINES	   2	/* # rs232 terminals (0 to 4) */
 #define	NR_PTYS		   32	/* # pseudo terminals (0 to 64) */
 
 /*===========================================================================*
