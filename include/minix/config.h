@@ -1,13 +1,15 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#define HYPERVISOR 1
+
 /* Minix release and version numbers. */
 #define OS_RELEASE "3"
 #ifdef HYPERVISOR
 #define OS_VERSION "1.2a-hyper"
 #else
 #define OS_VERSION "1.2a"
-#fi
+#fi /* HYPERVISOR */
 
 /* This file sets configuration parameters for the MINIX kernel, FS, and PM.
  * It is divided up into two main sections.  The first section contains

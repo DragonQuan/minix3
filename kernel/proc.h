@@ -13,6 +13,7 @@
 #include "protect.h"
 #include "const.h"
 #include "priv.h"
+#include "hypervisor.h"
  
 struct proc {
   struct stackframe_s p_reg;	/* process' registers saved in stack frame */
@@ -88,14 +89,14 @@ struct proc {
 #define IDLE_Q		  15    /* lowest, only IDLE process goes here */
 
 /* Magic process table addresses. */
-#define BEG_PROC_ADDR (&proc[0])
-#define BEG_USER_ADDR (&proc[NR_TASKS])
-#define END_PROC_ADDR (&proc[NR_TASKS + NR_PROCS])
+#define BEG_PROC_ADDR HYPER_BEG_PROC_ADDR(0)
+#define BEG_USER_ADDR HYPER_BEG_USER_ADDR(0)
+#define END_PROC_ADDR HYPER_BEG_PROC_ADDR(0)
 
 #define NIL_PROC          ((struct proc *) 0)		
 #define NIL_SYS_PROC      ((struct proc *) 1)		
-#define cproc_addr(n)     (&(proc + NR_TASKS)[(n)])
-#define proc_addr(n)      (pproc_addr + NR_TASKS)[(n)]
+#define cproc_addr(n)     hyper_cproc_addr(0,n)
+#define proc_addr(n)      hyper_proc_addr(0,n)
 #define proc_nr(p) 	  ((p)->p_nr)
 
 #define isokprocn(n)      ((unsigned) ((n) + NR_TASKS) < NR_PROCS + NR_TASKS)
@@ -105,15 +106,5 @@ struct proc {
 #define iskerneln(n)	  ((n) < 0)
 #define isuserp(p)        isusern((p)->p_nr)
 #define isusern(n)        ((n) >= 0)
-
-/* The process table and pointers to process table slots. The pointers allow
- * faster access because now a process entry can be found by indexing the
- * pproc_addr array, while accessing an element i requires a multiplication
- * with sizeof(struct proc) to determine the address. 
- */
-EXTERN struct proc proc[NR_TASKS + NR_PROCS];	/* process table */
-EXTERN struct proc *pproc_addr[NR_TASKS + NR_PROCS];
-EXTERN struct proc *rdy_head[NR_SCHED_QUEUES]; /* ptrs to ready list headers */
-EXTERN struct proc *rdy_tail[NR_SCHED_QUEUES]; /* ptrs to ready list tails */
 
 #endif /* PROC_H */
