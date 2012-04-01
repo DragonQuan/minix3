@@ -27,10 +27,10 @@ EXTERN struct randomness krandom;	/* gather kernel random information */
 EXTERN struct loadinfo kloadinfo;	/* status of load average */
 
 /* Process scheduling information and the kernel reentry count. */
-EXTERN struct proc *prev_ptr;	/* previously running process */
-EXTERN struct proc *proc_ptr;	/* pointer to currently running process */
-EXTERN struct proc *next_ptr;	/* next process to run after restart() */
-EXTERN struct proc *bill_ptr;	/* process to bill for clock ticks */
+EXTERN struct proc *prev_ptr;  /* previously running process */
+EXTERN struct proc *proc_ptr;  /* pointer to currently running process */
+EXTERN struct proc *next_ptr;  /* next process to run after restart() */
+EXTERN struct proc *bill_ptr;  /* process to bill for clock ticks */
 EXTERN char k_reenter;		/* kernel reentry count (entry count less 1) */
 EXTERN unsigned lost_ticks;	/* clock ticks counted outside clock task */
 
@@ -46,12 +46,6 @@ EXTERN int irq_use;				/* map of all in-use irq's */
 EXTERN reg_t mon_ss, mon_sp;		/* boot monitor stack */
 EXTERN int mon_return;			/* true if we can return to monitor */
 EXTERN int do_serial_debug;
-EXTERN int who_e, who_p;		/* message source endpoint and proc */
-
-/* VM */
-EXTERN phys_bytes vm_base;
-EXTERN phys_bytes vm_size;
-EXTERN phys_bytes vm_mem_high;
 
 /* Variables that are initialized elsewhere are just extern here. */
 extern struct boot_image image[]; 	/* system image processes */

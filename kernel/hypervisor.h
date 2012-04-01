@@ -1,6 +1,14 @@
 #ifndef HYPERVISOR_H
 #define HYPERVISOR_H
 
+#ifdef _TABLE
+#undef EXTERN
+#define EXTERN
+#endif
+
+#include <minix/config.h>
+#include "config.h"
+
 struct proc;
 
 /* virtual machine structure */ 
@@ -10,11 +18,19 @@ struct hyper_vm {
    * faster access because now a process entry can be found by indexing the
    * pproc_addr array, while accessing an element i requires a multiplication
    * with sizeof(struct proc) to determine the address.
+   * (from proc.h)
    */
   struct proc proc[NR_TASKS + NR_PROCS];   /* process table */
   struct proc *pproc_addr[NR_TASKS + NR_PROCS];
   struct proc *rdy_head[NR_SCHED_QUEUES]; /* ptrs to ready list headers */
   struct proc *rdy_tail[NR_SCHED_QUEUES]; /* ptrs to ready list tails */
+
+  int who_e, who_p;        /* message source endpoint and proc (from glo.h) */
+
+  /* VM (from glo.h) */
+  phys_bytes vm_base;
+  phys_bytes vm_size;
+  phys_bytes vm_mem_high;
 };
 
 #define HYPER_NR_VMS     1     /* how many virtual machines */
