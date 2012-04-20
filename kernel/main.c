@@ -35,7 +35,7 @@ PUBLIC void main()
   struct boot_image *ip;	/* boot image pointer */
   register struct proc *rp;	/* process pointer */
   register struct priv *sp;	/* privilege structure pointer */
-  register int i, s;
+  register int i, s, vmid;
   int hdrindex;			/* index to array of a.out headers */
   phys_clicks text_base;
   vir_clicks text_clicks, data_clicks;
@@ -45,16 +45,22 @@ PUBLIC void main()
   /* Initialize the interrupt controller. */
   intr_init(1);
 
-  /* Clear the process table. Anounce each slot as empty and set up mappings 
-   * for proc_addr() and proc_nr() macros. Do the same for the table with 
-   * privilege structures for the system processes. 
-   */
-  for (rp = BEG_PROC_ADDR, i = -NR_TASKS; rp < END_PROC_ADDR; ++rp, ++i) {
-  	rp->p_rts_flags = SLOT_FREE;		/* initialize free slot */
-	rp->p_nr = i;				/* proc number from ptr */
-	rp->p_endpoint = _ENDPOINT(0, rp->p_nr); /* generation no. 0 */
-        (pproc_addr + NR_TASKS)[i] = rp;        /* proc ptr from number */
+  /* for each virtual machine */
+  for (vmid= 0, vmid < HYPER_NR_VMS; ++vmid) {
+    /* Clear the process table. Anounce each slot as empty and set up mappings 
+     * for proc_addr() and proc_nr() macros. Do the same for the table with 
+     * privilege structures for the system processes. 
+     */
+    for (rp = HYPER_BEG_PROC_ADDR(vmid), i = -NR_TASKS; rp < HYPER_END_PROC_ADDR(vmid); ++rp, ++i) {
+      rp->p_rts_flags = SLOT_FREE;		/* initialize free slot */
+      rp->p_nr = i;				/* proc number from ptr */
+      rp->p_endpoint = _ENDPOINT(0, rp->p_nr); /* generation no. 0 */
+      hyper_proc_addr(vm_id,i) = rp;        /* proc ptr from number */
+      rp->p_vmid = vmid;                     /* the process belongs to a vm */
+    }
   }
+
+  /* only one privileges table is shared between virtual machines */
   for (sp = BEG_PRIV_ADDR, i = 0; sp < END_PRIV_ADDR; ++sp, ++i) {
 	sp->s_proc_nr = NONE;			/* initialize as free */
 	sp->s_id = i;				/* priv structure index */
@@ -72,9 +78,10 @@ PUBLIC void main()
   /* Task stacks. */
   ktsb = (reg_t) t_stack;
 
+  /* boot procs only loads on vmid == HYPER_ID_VM0) */
   for (i=0; i < NR_BOOT_PROCS; ++i) {
 	ip = &image[i];				/* process' attributes */
-	rp = proc_addr(ip->proc_nr);		/* get process pointer */
+	rp = hyper_proc_addr(HYPER_ID_VM0,ip->proc_nr);	/* get process pointer */
 	ip->endpoint = rp->p_endpoint;		/* ipc endpoint */
 	rp->p_max_priority = ip->priority;	/* max scheduling priority */
 	rp->p_priority = ip->priority;		/* current priority */
@@ -161,7 +168,7 @@ PUBLIC void main()
   /* MINIX is now ready. All boot image processes are on the ready queue.
    * Return to the assembly code to start running the current process. 
    */
-  bill_ptr = proc_addr(IDLE);		/* it has to point somewhere */
+  bill_ptr = hyper_proc_addr(HYPER_ID_VM0,IDLE);/* it has to point somewhere */
   announce();				/* print MINIX startup banner */
   restart();
 }

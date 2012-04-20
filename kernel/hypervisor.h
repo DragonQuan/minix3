@@ -37,11 +37,15 @@ struct hyper_vm {
 
 EXTERN struct hyper_vm hyper_vm[HYPER_NR_VMS]; /* virtual machines table */
 
+/* the vmid of the running process */
+EXTERN int running_vmid = 0;
+
 /* every vm is a "domain" */
 #define HYPER_VM(vm_id) (hyper_vm[(vm_id)])
 
 /* HYPER_VM0 is the domain 0, the vm that has the systask and the real hardware */
-#define HYPER_VM0 HYPER_VM(0)
+#define HYPER_ID_VM0 0
+#define HYPER_VM0 HYPER_VM(HYPER_ID_VM0)
 
 /* Magic process table addresses. */
 #define HYPER_BEG_PROC_ADDR(vm_id) (&(HYPER_VM(vm_id).proc[0]))
