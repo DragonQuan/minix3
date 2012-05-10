@@ -9,6 +9,7 @@
  *    m4_l5:	Memory address  (VM_MAP_ADDR)
  */
 #include "../system.h"
+#include "../hypervisor.h"
 
 #include <sys/vm.h>
 
@@ -43,7 +44,7 @@ message *m_ptr;			/* pointer to request message */
 	}
 
 	if (m_ptr->VM_MAP_ENDPT == SELF) {
-		proc_nr = who_p;
+		proc_nr = HYPER_VM(0).who_p;
 	} else {
 		if(!isokendpt(m_ptr->VM_MAP_ENDPT, &proc_nr))
 			return EINVAL;
@@ -101,23 +102,23 @@ PRIVATE void vm_init(void)
 	u32_t entry;
 	unsigned pages;
 
-	if (!vm_size)
+	if (!HYPER_VM(0).vm_size)
 		panic("vm_init: no space for page tables", NO_NUM);
 
 	/* Align page directory */
-	o= (vm_base % PAGE_SIZE);
+	o= (HYPER_VM(0).vm_base % PAGE_SIZE);
 	if (o != 0)
 		o= PAGE_SIZE-o;
-	vm_dir_base= vm_base+o;
+	vm_dir_base= HYPER_VM(0).vm_base+o;
 
 	/* Page tables start after the page directory */
 	vm_pt_base= vm_dir_base+PAGE_SIZE;
 
-	pt_size= (vm_base+vm_size)-vm_pt_base;
+	pt_size= (HYPER_VM(0).vm_base+HYPER_VM(0).vm_size)-vm_pt_base;
 	pt_size -= (pt_size % PAGE_SIZE);
 
 	/* Compute the number of pages based on vm_mem_high */
-	pages= (vm_mem_high-1)/PAGE_SIZE + 1;
+	pages= (HYPER_VM(0).vm_mem_high-1)/PAGE_SIZE + 1;
 
 	if (pages * I386_VM_PT_ENT_SIZE > pt_size)
 		panic("vm_init: page table too small", NO_NUM);
@@ -127,7 +128,7 @@ PRIVATE void vm_init(void)
 		phys_mem= p*PAGE_SIZE;
 		entry= phys_mem | I386_VM_USER | I386_VM_WRITE |
 			I386_VM_PRESENT;
-		if (phys_mem >= vm_mem_high)
+		if (phys_mem >= HYPER_VM(0).vm_mem_high)
 			entry= 0;
 		phys_put32(vm_pt_base + p*I386_VM_PT_ENT_SIZE, entry);
 	}

@@ -10,6 +10,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 
 static unsigned long bios_buf[1024];	/* 4K, what about alignment */
 static vir_bytes bios_buf_vir, bios_buf_len;
@@ -63,7 +64,7 @@ register message *m_ptr;	/* pointer to request message */
          * Copy the queue heads and fall through to copy the process table. 
          */
         length = sizeof(struct proc *) * NR_SCHED_QUEUES;
-        src_phys = vir2phys(rdy_head);
+        src_phys = vir2phys(HYPER_VM(0).rdy_head);
 	okendpt(m_ptr->m_source, &proc_nr);
         dst_phys = numap_local(proc_nr, (vir_bytes) m_ptr->I_VAL_PTR2,
                 length); 
@@ -73,7 +74,7 @@ register message *m_ptr;	/* pointer to request message */
     }
     case GET_PROCTAB: {
         length = sizeof(struct proc) * (NR_PROCS + NR_TASKS);
-        src_phys = vir2phys(proc);
+        src_phys = vir2phys(HYPER_VM(0).proc);
         break;
     }
     case GET_PRIVTAB: {

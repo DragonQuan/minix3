@@ -8,8 +8,7 @@
 
 #include <minix/config.h>
 #include "config.h"
-
-struct proc;
+#include "proc.h"
 
 /* virtual machine structure */ 
 struct hyper_vm {
@@ -35,11 +34,6 @@ struct hyper_vm {
 
 #define HYPER_NR_VMS     1     /* how many virtual machines */
 
-EXTERN struct hyper_vm hyper_vm[HYPER_NR_VMS]; /* virtual machines table */
-
-/* the vmid of the running process */
-EXTERN int running_vmid = 0;
-
 /* every vm is a "domain" */
 #define HYPER_VM(vm_id) (hyper_vm[(vm_id)])
 
@@ -54,5 +48,8 @@ EXTERN int running_vmid = 0;
 
 #define hyper_cproc_addr(vm_id,n)     (&(HYPER_VM(vm_id).proc + NR_TASKS)[(n)])
 #define hyper_proc_addr(vm_id,n)      (HYPER_VM(vm_id).pproc_addr + NR_TASKS)[(n)]
+
+#define hyper_rdy_head(vm_id)      (HYPER_VM(vm_id).rdy_head)
+#define hyper_rdy_tail(vm_id)      (HYPER_VM(vm_id).rdy_tail)
 
 #endif /* HYPERVISOR_H */

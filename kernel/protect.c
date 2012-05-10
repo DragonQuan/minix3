@@ -5,6 +5,7 @@
 
 #include "kernel.h"
 #include "proc.h"
+#include "hypervisor.h"
 #include "protect.h"
 
 #if _WORD_SIZE == 4

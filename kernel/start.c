@@ -11,6 +11,7 @@
 #include "kernel.h"
 #include "protect.h"
 #include "proc.h"
+#include "hypervisor.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -61,7 +62,7 @@ U16_t parmoff, parmsize;	/* boot parameters offset and length */
   kinfo.release[sizeof(kinfo.release)-1] = '\0';
   strncpy(kinfo.version, OS_VERSION, sizeof(kinfo.version));
   kinfo.version[sizeof(kinfo.version)-1] = '\0';
-  kinfo.proc_addr = (vir_bytes) proc;
+  kinfo.proc_addr = (vir_bytes) HYPER_BEG_PROC_ADDR(0);
   kinfo.kmem_base = vir2phys(0);
   kinfo.kmem_size = (phys_bytes) &end;	
 

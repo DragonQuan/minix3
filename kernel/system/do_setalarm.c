@@ -8,6 +8,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 
 #include <minix/endpoint.h>
 
@@ -31,7 +32,7 @@ message *m_ptr;			/* pointer to request message */
   /* Extract shared parameters from the request message. */
   exp_time = m_ptr->ALRM_EXP_TIME;	/* alarm's expiration time */
   use_abs_time = m_ptr->ALRM_ABS_TIME;	/* flag for absolute time */
-  rp = proc_addr(who_p);
+  rp = hyper_proc_addr(0, HYPER_VM(0).who_p);
   if (! (priv(rp)->s_flags & SYS_PROC)) return(EPERM);
 
   /* Get the timer structure and set the parameters for this alarm. */

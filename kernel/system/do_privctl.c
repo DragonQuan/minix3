@@ -6,6 +6,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include "../ipc.h"
 #include <signal.h>
 
@@ -38,7 +39,7 @@ message *m_ptr;			/* pointer to request message */
    * running by the NO_PRIV flag. This flag is set when a privileged process
    * forks. 
    */
-  caller_ptr = proc_addr(who_p);
+  caller_ptr = hyper_proc_addr(0,HYPER_VM(0).who_p);
   if (! (priv(caller_ptr)->s_flags & SYS_PROC)) return(EPERM); 
   if(!isokendpt(m_ptr->PR_ENDPT, &proc_nr)) return(EINVAL);
   rp = proc_addr(proc_nr);

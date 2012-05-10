@@ -9,6 +9,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 
 #include <minix/endpoint.h>
 

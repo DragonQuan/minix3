@@ -9,6 +9,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <minix/devio.h>
 #include <minix/endpoint.h>
 
@@ -54,7 +55,7 @@ register message *m_ptr;	/* pointer to request message */
 
   /* Calculate physical addresses and copy (port,value)-pairs from user. */
   caller_vir = (vir_bytes) m_ptr->DIO_VEC_ADDR;
-  caller_phys = umap_local(proc_addr(who_p), D, caller_vir, bytes);
+  caller_phys = umap_local(hyper_proc_addr(0,HYPER_VM(0).who_p), D, caller_vir, bytes);
   if (0 == caller_phys) return(EFAULT);
   phys_copy(caller_phys, vir2phys(vdevio_buf), (phys_bytes) bytes);
 

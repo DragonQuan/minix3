@@ -6,6 +6,7 @@
  *    m1_p1:	PR_MEM_PTR		(pointer to the new memory map)
  */
 #include "../system.h"
+#include "../hypervisor.h"
 #include <minix/endpoint.h>
 
 #if USE_NEWMAP
@@ -29,7 +30,7 @@ message *m_ptr;			/* pointer to request message */
   rp = proc_addr(proc);
 
   /* Copy the map from PM. */
-  src_phys = umap_local(proc_addr(who_p), D, (vir_bytes) map_ptr, 
+  src_phys = umap_local(hyper_proc_addr(0,HYPER_VM(0).who_p), D, (vir_bytes) map_ptr, 
       sizeof(rp->p_memmap));
   if (src_phys == 0) return(EFAULT);
   phys_copy(src_phys,vir2phys(rp->p_memmap),(phys_bytes)sizeof(rp->p_memmap));

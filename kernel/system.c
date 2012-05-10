@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <sys/sigcontext.h>
 #include <minix/endpoint.h>
+#include "hypervisor.h"
 #if (CHIP == INTEL)
 #include <ibm/memory.h>
 #include "protect.h"
@@ -75,9 +76,9 @@ PUBLIC void sys_task()
       /* Get work. Block and wait until a request message arrives. */
       receive(ANY, &m);			
       call_nr = (unsigned) m.m_type - KERNEL_CALL;	
-      who_e = m.m_source;
-      okendpt(who_e, &who_p);
-      caller_ptr = proc_addr(who_p);
+      HYPER_VM(0).who_e = m.m_source;
+      okendpt(HYPER_VM(0).who_e, &HYPER_VM(0).who_p);
+      caller_ptr = proc_addr(HYPER_VM(0).who_p);
 
       /* See if the caller made a valid request and try to handle it. */
       if (! (priv(caller_ptr)->s_call_mask & (1<<call_nr))) {

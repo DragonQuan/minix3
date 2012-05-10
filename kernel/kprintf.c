@@ -13,6 +13,7 @@
 
 #include "kernel.h"
 #include "proc.h"
+#include "hypervisor.h"
 #include <signal.h>
 
 #define printf kprintf

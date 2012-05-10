@@ -9,6 +9,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include "../kernel.h"
 
 /*===========================================================================*
@@ -21,7 +22,7 @@ register message *m_ptr;	/* pointer to request message */
 
 #if 1 /* ENABLE_USERPRIV && ENABLE_USERIOPL */
   if (m_ptr->IO_ENDPT == SELF) {
-	proc_nr = who_p;
+	proc_nr = HYPER_VM(0).who_p;
   } else if(!isokendpt(m_ptr->IO_ENDPT, &proc_nr))
 	return(EINVAL);
   enable_iop(proc_addr(proc_nr));

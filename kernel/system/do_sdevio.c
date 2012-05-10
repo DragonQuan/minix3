@@ -11,6 +11,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <minix/devio.h>
 #include <minix/endpoint.h>
 
@@ -32,7 +33,7 @@ register message *m_ptr;	/* pointer to request message */
    * that initiated the device I/O. Kernel processes, of course, are denied.
    */
   if (proc_nr_e == SELF)
-	proc_nr = who_p;
+	proc_nr = HYPER_VM(0).who_p;
   else
 	if(!isokendpt(proc_nr_e, &proc_nr))
 		return(EINVAL);

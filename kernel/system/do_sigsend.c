@@ -9,6 +9,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <signal.h>
 #include <string.h>
 #include <sys/sigcontext.h>

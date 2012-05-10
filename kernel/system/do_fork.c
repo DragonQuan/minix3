@@ -7,6 +7,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <signal.h>
 #if (CHIP == INTEL)
 #include "../protect.h"

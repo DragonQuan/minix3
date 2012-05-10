@@ -12,6 +12,7 @@
 #endif
 
 #include <minix/config.h>
+#include "hypervisor.h"
 #include "config.h"
 
 /* Variables relating to shutting down MINIX. */
@@ -53,6 +54,11 @@ extern char *t_stack[];			/* task stack space */
 extern struct segdesc_s gdt[];		/* global descriptor table */
 
 EXTERN _PROTOTYPE( void (*level0_func), (void) );
+
+EXTERN struct hyper_vm hyper_vm[HYPER_NR_VMS]; /* virtual machines table */
+/* the vmid of the running process */
+EXTERN int running_vmid;
+
 #endif /* (CHIP == INTEL) */
 
 #if (CHIP == M68000)

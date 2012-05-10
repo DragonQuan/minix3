@@ -8,6 +8,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <string.h>
 #include <signal.h>
 #include <sys/sigcontext.h>

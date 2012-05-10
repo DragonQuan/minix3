@@ -29,7 +29,7 @@
 #define _TABLE
 
 #include "kernel.h"
-#include "proc.h"
+#include "hypervisor.h"
 #include "ipc.h"
 #include <minix/com.h>
 #include <ibm/int86.h>

@@ -9,6 +9,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <unistd.h>
 
 #if USE_ABORT

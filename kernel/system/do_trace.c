@@ -9,6 +9,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <sys/ptrace.h>
 
 #if USE_TRACE

@@ -6,6 +6,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <minix/type.h>
 #include <minix/endpoint.h>
 #include <ibm/int86.h>
@@ -22,7 +23,7 @@ register message *m_ptr;	/* pointer to request message */
   phys_bytes caller_phys, kernel_phys;
 
   caller_vir = (vir_bytes) m_ptr->INT86_REG86;
-  caller_phys = umap_local(proc_addr(who_p), D, caller_vir, sizeof(reg86));
+  caller_phys = umap_local(hyper_proc_addr(0,HYPER_VM(0).who_p), D, caller_vir, sizeof(reg86));
   if (0 == caller_phys) return(EFAULT);
   kernel_phys = vir2phys(&reg86);
   phys_copy(caller_phys, kernel_phys, (phys_bytes) sizeof(reg86));

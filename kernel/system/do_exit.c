@@ -6,6 +6,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 
 #include <minix/endpoint.h>
 
@@ -28,7 +29,7 @@ message *m_ptr;			/* pointer to request message */
   int exit_e;				
 
   /* Determine what process exited. User processes are handled here. */
-  if (PM_PROC_NR == who_p) {
+  if (PM_PROC_NR == HYPER_VM(0).who_p) {
       if (m_ptr->PR_ENDPT != SELF) { 		/* PM tries to exit self */
           if(!isokendpt(m_ptr->PR_ENDPT, &exit_e)) /* get exiting process */
 	     return EINVAL;
@@ -38,7 +39,7 @@ message *m_ptr;			/* pointer to request message */
   } 
 
   /* The PM or some other system process requested to be exited. */
-  clear_proc(proc_addr(who_p));
+  clear_proc(hyper_proc_addr(0,HYPER_VM(0).who_p));
   return(EDONTREPLY);
 }
 

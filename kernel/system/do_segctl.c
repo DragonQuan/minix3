@@ -9,6 +9,7 @@
  *    m4_l5:	SEG_INDEX	(return index into remote memory map here)
  */
 #include "../system.h"
+#include "../hypervisor.h"
 #include "../protect.h"
 
 #if USE_SEGCTL
@@ -31,7 +32,7 @@ register message *m_ptr;	/* pointer to request message */
   int result;
 
   /* First check if there is a slot available for this segment. */
-  rp = proc_addr(who_p);
+  rp = hyper_proc_addr(0,HYPER_VM(0).who_p);
   index = -1;
   for (i=0; i < NR_REMOTE_SEGS; i++) {
       if (! rp->p_priv->s_farmem[i].in_use) {

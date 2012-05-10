@@ -9,6 +9,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <minix/devio.h>
 #include <minix/endpoint.h>
 
@@ -26,7 +27,7 @@ register message *m_ptr;	/* pointer to request message */
     struct io_range *iorp;
     int i, size, nr_io_range;
 
-    rp= proc_addr(who_p);
+    rp= hyper_proc_addr(0,HYPER_VM(0).who_p);
     privp= priv(rp);
     if (!privp)
     {

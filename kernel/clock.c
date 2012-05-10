@@ -31,6 +31,7 @@
 
 #include "kernel.h"
 #include "proc.h"
+#include "hypervisor.h"
 #include <signal.h>
 #include <minix/com.h>
 
@@ -305,7 +306,7 @@ PRIVATE void load_update(void)
 
 	/* Cumulation. How many processes are ready now? */
 	for(q = 0; q < NR_SCHED_QUEUES; q++)
-		for(p = rdy_head[q]; p != NIL_PROC; p = p->p_nextready)
+		for(p = hyper_rdy_head(0)[q]; p != NIL_PROC; p = p->p_nextready)
 			enqueued++;
 
 	kloadinfo.proc_load_history[slot] += enqueued;

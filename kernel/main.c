@@ -20,7 +20,7 @@
 #include <minix/callnr.h>
 #include <minix/com.h>
 #include <minix/endpoint.h>
-#include "proc.h"
+#include "hypervisor.h"
 
 /* Prototype declarations for PRIVATE functions. */
 FORWARD _PROTOTYPE( void announce, (void));	
@@ -46,7 +46,7 @@ PUBLIC void main()
   intr_init(1);
 
   /* for each virtual machine */
-  for (vmid= 0, vmid < HYPER_NR_VMS; ++vmid) {
+  for (vmid= 0; vmid < HYPER_NR_VMS; ++vmid) {
     /* Clear the process table. Anounce each slot as empty and set up mappings 
      * for proc_addr() and proc_nr() macros. Do the same for the table with 
      * privilege structures for the system processes. 
@@ -55,8 +55,8 @@ PUBLIC void main()
       rp->p_rts_flags = SLOT_FREE;		/* initialize free slot */
       rp->p_nr = i;				/* proc number from ptr */
       rp->p_endpoint = _ENDPOINT(0, rp->p_nr); /* generation no. 0 */
-      hyper_proc_addr(vm_id,i) = rp;        /* proc ptr from number */
-      rp->p_vmid = vmid;                     /* the process belongs to a vm */
+      hyper_proc_addr(vmid,i) = rp;        /* proc ptr from number */
+/* FIXME      rp->p_vmid = vmid;  */                   /* the process belongs to a vm */
     }
   }
 

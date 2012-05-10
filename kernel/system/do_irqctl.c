@@ -10,6 +10,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 
 #include <minix/endpoint.h>
 
@@ -60,7 +61,7 @@ register message *m_ptr;	/* pointer to request message */
       /* Check if IRQ line is acceptable. */
       if (irq_vec < 0 || irq_vec >= NR_IRQ_VECTORS) return(EINVAL);
 
-      rp= proc_addr(who_p);
+      rp= hyper_proc_addr(0,HYPER_VM(0).who_p);
       privp= priv(rp);
       if (!privp)
       {

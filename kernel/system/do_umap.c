@@ -10,6 +10,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 
 #if USE_UMAP
 
@@ -30,7 +31,7 @@ register message *m_ptr;	/* pointer to request message */
 
   /* Verify process number. */
   if (endpt == SELF)
-	proc_nr = who_p;
+	proc_nr = HYPER_VM(0).who_p;
   else
 	if (! isokendpt(endpt, &proc_nr))
 		return(EINVAL);

@@ -7,6 +7,7 @@
  */
 
 #include "../system.h"
+#include "../hypervisor.h"
 #include <minix/type.h>
 #include <sys/resource.h>
 

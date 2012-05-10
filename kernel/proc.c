@@ -41,6 +41,7 @@
 #include <minix/endpoint.h>
 #include "debug.h"
 #include "kernel.h"
+#include "hypervisor.h"
 #include "proc.h"
 #include <signal.h>
 
@@ -519,17 +520,17 @@ register struct proc *rp;	/* this process is now runnable */
   sched(rp, &q, &front);
 
   /* Now add the process to the queue. */
-  if (rdy_head[q] == NIL_PROC) {		/* add to empty queue */
-      rdy_head[q] = rdy_tail[q] = rp; 		/* create a new queue */
+  if (hyper_rdy_head(0)[q] == NIL_PROC) {		/* add to empty queue */
+      hyper_rdy_head(0)[q] = hyper_rdy_tail(0)[q] = rp; 		/* create a new queue */
       rp->p_nextready = NIL_PROC;		/* mark new end */
   } 
   else if (front) {				/* add to head of queue */
-      rp->p_nextready = rdy_head[q];		/* chain head of queue */
-      rdy_head[q] = rp;				/* set new queue head */
+      rp->p_nextready = hyper_rdy_head(0)[q];		/* chain head of queue */
+      hyper_rdy_head(0)[q] = rp;				/* set new queue head */
   } 
   else {					/* add to tail of queue */
-      rdy_tail[q]->p_nextready = rp;		/* chain tail of queue */	
-      rdy_tail[q] = rp;				/* set new queue tail */
+      hyper_rdy_tail(0)[q]->p_nextready = rp;		/* chain tail of queue */	
+      hyper_rdy_tail(0)[q] = rp;				/* set new queue tail */
       rp->p_nextready = NIL_PROC;		/* mark new end */
   }
 
@@ -572,12 +573,12 @@ register struct proc *rp;	/* this process is no longer runnable */
    * running by being sent a signal that kills it.
    */
   prev_xp = NIL_PROC;				
-  for (xpp = &rdy_head[q]; *xpp != NIL_PROC; xpp = &(*xpp)->p_nextready) {
+  for (xpp = &hyper_rdy_head(0)[q]; *xpp != NIL_PROC; xpp = &(*xpp)->p_nextready) {
 
       if (*xpp == rp) {				/* found process to remove */
           *xpp = (*xpp)->p_nextready;		/* replace with next chain */
-          if (rp == rdy_tail[q])		/* queue tail removed */
-              rdy_tail[q] = prev_xp;		/* set new tail */
+          if (rp == hyper_rdy_tail(0)[q])		/* queue tail removed */
+              hyper_rdy_tail(0)[q] = prev_xp;		/* set new tail */
           if (rp == proc_ptr || rp == next_ptr)	/* active process removed */
               pick_proc();			/* pick new process to run */
           break;
@@ -641,7 +642,7 @@ PRIVATE void pick_proc()
    * The lowest queue contains IDLE, which is always ready.
    */
   for (q=0; q < NR_SCHED_QUEUES; q++) {	
-      if ( (rp = rdy_head[q]) != NIL_PROC) {
+      if ( (rp = hyper_rdy_head(0)[q]) != NIL_PROC) {
           next_ptr = rp;			/* run process 'rp' next */
           if (priv(rp)->s_flags & BILLABLE)	 	
               bill_ptr = rp;			/* bill for system time */

@@ -9,7 +9,7 @@
 #define OS_VERSION "1.2a-hyper"
 #else
 #define OS_VERSION "1.2a"
-#fi /* HYPERVISOR */
+#endif /* HYPERVISOR */
 
 /* This file sets configuration parameters for the MINIX kernel, FS, and PM.
  * It is divided up into two main sections.  The first section contains
